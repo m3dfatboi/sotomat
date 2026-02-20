@@ -220,71 +220,52 @@ function NewMatchModal({ players, onClose, onSubmit, savedP1, savedP2, onSavePla
   const [s2, setS2]   = useState("");
   const [busy, setBusy] = useState(false);
   const [err,  setErr]  = useState("");
-
   const is2v2 = mode === "2v2";
-
   const p1obj  = players.find(p => p.id === parseInt(p1));
   const p1bobj = players.find(p => p.id === parseInt(p1b));
   const p2obj  = players.find(p => p.id === parseInt(p2));
   const p2bobj = players.find(p => p.id === parseInt(p2b));
-
-  const allIds1v1 = [p1, p2].filter(Boolean);
   const allIds2v2 = [p1, p1b, p2, p2b].filter(Boolean);
-  const noDupes1v1 = new Set(allIds1v1).size === allIds1v1.length;
   const noDupes2v2 = new Set(allIds2v2).size === allIds2v2.length;
-
   const valid = is2v2
     ? p1 && p1b && p2 && p2b && noDupes2v2 && s1!=="" && s2!=="" && parseInt(s1)!==parseInt(s2)
     : p1 && p2 && p1!==p2 && s1!=="" && s2!=="" && parseInt(s1)!==parseInt(s2);
-
   async function handleSubmit() {
     if (!valid || busy) return;
     setBusy(true); setErr("");
     try {
       const p1name = is2v2 ? `${p1obj.name} & ${p1bobj.name}` : p1obj.name;
       const p2name = is2v2 ? `${p2obj.name} & ${p2bobj.name}` : p2obj.name;
-      await onSubmit({ p1_name: p1name, p2_name: p2name,
-                       score1: parseInt(s1), score2: parseInt(s2) });
+      await onSubmit({ p1_name: p1name, p2_name: p2name, score1: parseInt(s1), score2: parseInt(s2) });
       onSavePlayers && onSavePlayers(p1, p2);
       onClose();
     } catch (e) { setErr(e.message); }
     finally { setBusy(false); }
   }
-
   const preview = obj => obj ? (
     <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px",
       background:"#FAFBFC", borderRadius:8, border:"1px solid #E8EAEC", marginTop:8 }}>
       <Avatar name={obj.name} size={34}/>
       <div>
         <div style={{ fontWeight:600, fontSize:14 }}>{obj.name}</div>
-        <div style={{ fontSize:12, color:"#8C9BAB" }}>
-          {obj.rating} очков · {obj.wins}В / {obj.losses}П
-        </div>
+        <div style={{ fontSize:12, color:"#8C9BAB" }}>{obj.rating} очков · {obj.wins}В / {obj.losses}П</div>
       </div>
     </div>
   ) : null;
-
-  // Players excluded from dropdowns to avoid full duplication
   const usedIds = is2v2 ? [p1, p1b, p2, p2b] : [p1, p2];
   const availFor = (ownVal) => players.filter(p =>
     p.id === parseInt(ownVal) || !usedIds.filter(id => id !== ownVal).includes(String(p.id))
   );
-
   const teamLabel = (obj1, obj2) => {
     if (!obj1 && !obj2) return "Команда";
     if (obj1 && obj2) return `${obj1.name.split(" ")[0]} & ${obj2.name.split(" ")[0]}`;
     return (obj1 || obj2).name.split(" ")[0];
   };
-
   return (
     <div className="modal-bg" onClick={e => e.target===e.currentTarget && onClose()}
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", zIndex:200,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        padding:"24px 16px", overflowY:"auto" }}>
-      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:520,
-        boxShadow:"0 24px 64px rgba(0,0,0,.2)" }}>
-
-        {/* Header */}
+        display:"flex", alignItems:"center", justifyContent:"center", padding:"24px 16px", overflowY:"auto" }}>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:520, boxShadow:"0 24px 64px rgba(0,0,0,.2)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
           padding:"18px 20px", borderBottom:"1px solid #E8EAEC" }}>
           <div>
@@ -294,12 +275,8 @@ function NewMatchModal({ players, onClose, onSubmit, savedP1, savedP2, onSavePla
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer",
             fontSize:22, color:"#8C9BAB", lineHeight:1, padding:"4px 8px" }}>✕</button>
         </div>
-
-        {/* Mode slider */}
-        <div style={{ padding:"14px 20px", borderBottom:"1px solid #E8EAEC",
-          display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:12, fontWeight:700, color:"#8C9BAB", textTransform:"uppercase",
-            letterSpacing:.7, marginRight:4 }}>Формат</span>
+        <div style={{ padding:"14px 20px", borderBottom:"1px solid #E8EAEC", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:12, fontWeight:700, color:"#8C9BAB", textTransform:"uppercase", letterSpacing:.7, marginRight:4 }}>Формат</span>
           <div style={{ display:"flex", background:"#F2F3F5", borderRadius:10, padding:3, gap:3 }}>
             {["1v1","2v2"].map(m => (
               <button key={m} onClick={() => { setMode(m); setP1b(""); setP2b(""); }}
@@ -313,59 +290,43 @@ function NewMatchModal({ players, onClose, onSubmit, savedP1, savedP2, onSavePla
             ))}
           </div>
         </div>
-
-        {/* Team 1 */}
         <div style={{ padding:"16px 20px", borderBottom:"1px solid #E8EAEC" }}>
           <div style={labelSt}>{is2v2 ? "Команда 1" : "Игрок 1"}</div>
           <select style={selectSt} value={p1} onChange={e => setP1(e.target.value)}>
             <option value="">Выбрать игрока...</option>
             {availFor(p1).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
           </select>
-          {!is2v2 && preview(p1obj)}
-          {is2v2 && (
-            <>
-              {preview(p1obj)}
-              <div style={{ margin:"10px 0 4px", fontSize:11, fontWeight:700, color:"#C8D0DA",
-                textTransform:"uppercase", letterSpacing:.7 }}>+ Партнёр</div>
-              <select style={selectSt} value={p1b} onChange={e => setP1b(e.target.value)}>
-                <option value="">Выбрать партнёра...</option>
-                {availFor(p1b).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
-              </select>
-              {preview(p1bobj)}
-            </>
-          )}
+          {preview(p1obj)}
+          {is2v2 && (<>
+            <div style={{ margin:"10px 0 4px", fontSize:11, fontWeight:700, color:"#C8D0DA", textTransform:"uppercase", letterSpacing:.7 }}>+ Партнёр</div>
+            <select style={selectSt} value={p1b} onChange={e => setP1b(e.target.value)}>
+              <option value="">Выбрать партнёра...</option>
+              {availFor(p1b).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
+            </select>
+            {preview(p1bobj)}
+          </>)}
         </div>
-
-        {/* VS divider */}
         <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px" }}>
           <div style={{ flex:1, height:1, background:"#E8EAEC" }}/>
           <span style={{ fontSize:11, fontWeight:800, color:"#C8D0DA", letterSpacing:3 }}>VS</span>
           <div style={{ flex:1, height:1, background:"#E8EAEC" }}/>
         </div>
-
-        {/* Team 2 */}
         <div style={{ padding:"0 20px 16px", borderBottom:"1px solid #E8EAEC" }}>
           <div style={labelSt}>{is2v2 ? "Команда 2" : "Игрок 2"}</div>
           <select style={selectSt} value={p2} onChange={e => setP2(e.target.value)}>
             <option value="">Выбрать игрока...</option>
             {availFor(p2).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
           </select>
-          {!is2v2 && preview(p2obj)}
-          {is2v2 && (
-            <>
-              {preview(p2obj)}
-              <div style={{ margin:"10px 0 4px", fontSize:11, fontWeight:700, color:"#C8D0DA",
-                textTransform:"uppercase", letterSpacing:.7 }}>+ Партнёр</div>
-              <select style={selectSt} value={p2b} onChange={e => setP2b(e.target.value)}>
-                <option value="">Выбрать партнёра...</option>
-                {availFor(p2b).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
-              </select>
-              {preview(p2bobj)}
-            </>
-          )}
+          {preview(p2obj)}
+          {is2v2 && (<>
+            <div style={{ margin:"10px 0 4px", fontSize:11, fontWeight:700, color:"#C8D0DA", textTransform:"uppercase", letterSpacing:.7 }}>+ Партнёр</div>
+            <select style={selectSt} value={p2b} onChange={e => setP2b(e.target.value)}>
+              <option value="">Выбрать партнёра...</option>
+              {availFor(p2b).map(p => <option key={p.id} value={p.id}>{p.name} — {p.rating} очков</option>)}
+            </select>
+            {preview(p2bobj)}
+          </>)}
         </div>
-
-        {/* Score */}
         <div style={{ padding:"16px 20px", borderBottom:"1px solid #E8EAEC" }}>
           <div style={labelSt}>Счёт</div>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -374,28 +335,22 @@ function NewMatchModal({ players, onClose, onSubmit, savedP1, savedP2, onSavePla
               <React.Fragment key={idx}>
                 {idx===1 && <div style={{ fontSize:24, fontWeight:800, color:"#C8D0DA", paddingTop:22 }}>:</div>}
                 <div style={{ flex:1, textAlign:"center" }}>
-                  <div style={{ fontSize:11, color:"#8C9BAB", marginBottom:6, whiteSpace:"nowrap",
-                    overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontSize:11, color:"#8C9BAB", marginBottom:6, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {item.obj ? (is2v2 ? teamLabel(item.obj, item.obj2) : item.obj.name.split(" ")[0]) : item.label}
                   </div>
                   <input type="number" min="0" max="99" value={item.val}
                     onChange={e => item.set(e.target.value)} placeholder="0"
                     style={{ padding:12, borderRadius:8, border:"1px solid #E8EAEC",
-                      fontSize:32, fontWeight:800, textAlign:"center",
-                      color:"#1A1A1A", outline:"none", width:"100%" }}/>
+                      fontSize:32, fontWeight:800, textAlign:"center", color:"#1A1A1A", outline:"none", width:"100%" }}/>
                 </div>
               </React.Fragment>
             ))}
           </div>
         </div>
-
         {err && (
           <div style={{ margin:"0 20px 0", padding:"10px 14px", background:"#FFEBEE",
-            borderRadius:8, color:"#C62828", fontSize:13, fontWeight:500 }}>
-            ⚠ {err}
-          </div>
+            borderRadius:8, color:"#C62828", fontSize:13, fontWeight:500 }}>⚠ {err}</div>
         )}
-
         <div style={{ padding:"16px 20px" }}>
           <button disabled={!valid || busy} onClick={handleSubmit}
             style={{ width:"100%", padding:13, borderRadius:9,
@@ -410,7 +365,6 @@ function NewMatchModal({ players, onClose, onSubmit, savedP1, savedP2, onSavePla
     </div>
   );
 }
-
 // ── Leaderboard ────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches }) {
   if (!players.length) return <Empty text="Нет игроков — добавьте первого во вкладке «Игроки»" />;
@@ -655,7 +609,7 @@ function History({ matches, onDelete }) {
       <table className="desk-table" style={{ width:"100%", borderCollapse:"collapse" }}>
         <thead>
           <tr>{["Дата","Игрок 1","Счёт","Игрок 2","Δ Рейтинг",""].map(h=>(
-            <th key={h} style={th}>{h}</th>
+            <th key={h} style={{ ...th, textAlign: h==="Счёт" ? "center" : "left" }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -788,11 +742,9 @@ function PlayersPage({ players, onDelete, onOpenAdd }) {
           );
         })}
         <div className="row-hover desk-flex" onClick={onOpenAdd}
-          style={{ alignItems:"center", gap:12, padding:"11px 16px", cursor:"pointer" }}>
-          <span style={{ minWidth:26 }}/>
-          <div style={{ width:36, height:36, borderRadius:"50%", border:"2px dashed #D0D5DD",
-            display:"flex", alignItems:"center", justifyContent:"center", color:"#C8D0DA", fontSize:20, flexShrink:0 }}>+</div>
-          <div style={{ fontSize:14, fontWeight:600, color:"#B0BAC9" }}>Добавить игрока...</div>
+          style={{ alignItems:"center", justifyContent:"center", gap:6, padding:"11px 16px", cursor:"pointer" }}>
+          <div style={{ fontSize:14, fontWeight:600, color:"#6B7A8D" }}>Добавить игрока...</div>
+          <span style={{ fontSize:18, color:"#6B7A8D", fontWeight:700, lineHeight:1 }}>+</span>
         </div>
       </div>
 
@@ -835,13 +787,13 @@ function PlayersPage({ players, onDelete, onOpenAdd }) {
             );
           })}
           <div onClick={onOpenAdd}
-            style={{ background:"#fff", borderRadius:14, border:"2px dashed #D0D5DD", padding:"16px",
-              cursor:"pointer", display:"flex", alignItems:"center", gap:12, color:"#B0BAC9" }}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor="#E8822A";e.currentTarget.style.background="#FFFAF6";}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor="#D0D5DD";e.currentTarget.style.background="#fff";}}>
-            <div style={{ width:42, height:42, borderRadius:"50%", border:"2px dashed #D0D5DD",
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>+</div>
+            style={{ background:"#fff", borderRadius:14, border:"2px dashed #9AA5B4", padding:"16px",
+              cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+              gap:6, color:"#6B7A8D" }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="#E8822A";e.currentTarget.style.background="#FFFAF6";e.currentTarget.style.color="#E8822A";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="#9AA5B4";e.currentTarget.style.background="#fff";e.currentTarget.style.color="#6B7A8D";}}>  
             <span style={{ fontWeight:600, fontSize:15 }}>Добавить игрока...</span>
+            <span style={{ fontSize:20, fontWeight:700, lineHeight:1 }}>+</span>
           </div>
         </div>
       </div>
@@ -1176,7 +1128,7 @@ function App() {
               background:"#E8822A", color:"#fff", border:"none",
               fontWeight:700, fontSize:14, cursor:"pointer",
               whiteSpace:"nowrap", flexShrink:0 }}>
-            + Новый матч
+            Новый матч +
           </button>
         </div>
       </header>
@@ -1197,7 +1149,7 @@ function App() {
       <nav className="mob" style={{ position:"fixed", bottom:0, left:0, right:0,
         background:"#fff", borderTop:"1px solid #E8EAEC",
         zIndex:90, paddingBottom:"env(safe-area-inset-bottom)" }}>
-        {NAV.map(n => (
+        {NAV.slice(0,2).map(n => (
           <button key={n.id} onClick={() => setView(n.id)}
             style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", padding:"8px 0", background:"none", border:"none",
@@ -1207,12 +1159,19 @@ function App() {
           </button>
         ))}
         <button onClick={() => setShowMatch(true)}
-          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-            justifyContent:"center", padding:"8px 0", background:"#E8822A",
-            border:"none", color:"#fff", cursor:"pointer", fontSize:11, fontWeight:700, gap:2 }}>
-          <span style={{ fontSize:22 }}>+</span>
-          Матч
+          style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+            padding:"8px 0", background:"#E8822A", border:"none", color:"#fff", cursor:"pointer" }}>
+          <span style={{ fontSize:26, lineHeight:1 }}>+</span>
         </button>
+        {NAV.slice(2).map(n => (
+          <button key={n.id} onClick={() => setView(n.id)}
+            style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", padding:"8px 0", background:"none", border:"none",
+              color:view===n.id?"#E8822A":"#8C9BAB", cursor:"pointer", fontSize:11, gap:2 }}>
+            <span style={{ fontSize:20 }}>{n.icon}</span>
+            {n.label}
+          </button>
+        ))}
       </nav>
 
       {showMatch && (
