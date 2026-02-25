@@ -124,6 +124,14 @@
       -webkit-appearance: none;
     }
 
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.7); }
+    }
+    .live-dot {
+      animation: livePulse 1.2s ease-in-out infinite;
+    }
+
     @keyframes spin {
       to {
         transform: rotate(360deg);
@@ -242,9 +250,8 @@
       const calc=()=>{if(!tRef.current)return;const r=tRef.current.getBoundingClientRect();setDs({position:"fixed",top:r.bottom+4,left:r.left,width:r.width,zIndex:9999});};
       useEffect(()=>{
         const onD=e=>{if(!(tRef.current&&tRef.current.contains(e.target))&&!(dRef.current&&dRef.current.contains(e.target)))setOpen(false);};
-        const onS=()=>setOpen(false);
-        document.addEventListener("mousedown",onD);window.addEventListener("scroll",onS,true);
-        return()=>{document.removeEventListener("mousedown",onD);window.removeEventListener("scroll",onS,true);};
+        document.addEventListener("mousedown",onD);
+        return()=>{document.removeEventListener("mousedown",onD);};
       },[]);
       const toggle=()=>{calc();setOpen(o=>!o);};
       const sel=players.find(pl=>String(pl.id)===String(value));
@@ -736,7 +743,7 @@
                   <div key={m.id} style={{padding:"14px 20px",borderBottom:"1px solid #E8EAEC"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                       <div style={{flex:1}}><TeamCell name={m.p1} name2={m.p1b} isWinner={m.winner===m.p1} size={24} ratings={ratingHist[m.id]||{}}/></div>
-                      <span style={{fontSize:15,fontWeight:800,color:"#1A1A1A",padding:"0 6px",flexShrink:0}}>{m.s1}:{m.s2}</span>
+                      <span style={{padding:"4px 12px",background:"#F5F5F5",borderRadius:20,fontWeight:800,fontSize:15,flexShrink:0}}>{m.s1}:{m.s2}</span>
                       <div style={{flex:1,display:"flex",justifyContent:"flex-end"}}><TeamCell name={m.p2} name2={m.p2b} isWinner={m.winner===m.p2} align="right" size={24} ratings={ratingHist[m.id]||{}}/></div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -962,6 +969,22 @@
         setDelLoading(true); await onDelete(confirmId);
         setConfirmId(null); setDelLoading(false);
       }
+
+      if (players.length === 0) {
+        return (
+          <div>
+            {confirmId && <ConfirmModal
+              text="Удалить игрока? Все его матчи и изменения рейтинга соперников тоже будут откатаны."
+              onConfirm={handleDelete} onCancel={() => setConfirmId(null)} loading={delLoading} />}
+            <div style={{ ...card, padding:"60px 20px", textAlign:"center" }}>
+              <div style={{ fontSize:52 }}>👤</div>
+              <div style={{ fontSize:15, color:"#8C9BAB", marginTop:12, lineHeight:1.6 }}>Нет игроков.<br/>Добавь первого участника рейтинга!</div>
+              <button onClick={onOpenAdd} style={{ ...btnPrimary, marginTop:20, padding:"10px 28px", fontSize:14, fontWeight:700 }}>Добавить игрока +</button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div>
           {confirmId && <ConfirmModal
@@ -974,7 +997,6 @@
               <span style={{ fontSize: 15, fontWeight: 700 }}>Все игроки</span>
               <span style={{ fontSize: 13, color: "#8C9BAB" }}>{players.length} человек</span>
             </div>
-            {players.length === 0 && <div style={{ padding: "28px 20px", color: "#8C9BAB", fontSize: 14, textAlign: "center" }}>Нет игроков</div>}
             {players.map((p, i) => {
               const total = p.wins + p.losses, wr = total ? Math.round(p.wins / total * 100) : 0;
               return (
@@ -1008,19 +1030,16 @@
                 </div>
               );
             })}
-            <div className="row-hover desk-flex" onClick={onOpenAdd}
-              style={{ alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 16px", cursor: "pointer" }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#6B7A8D" }}>Добавить игрока</div>
-              <span style={{ fontSize: 18, color: "#6B7A8D", fontWeight: 700, lineHeight: 1 }}>+</span>
+            <div style={{ padding:"12px 16px" }}>
+              <button onClick={onOpenAdd}
+                style={{ ...btnOutline, width:"100%", padding:"9px 0", fontSize:14, fontWeight:600, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                Добавить игрока +
+              </button>
             </div>
           </div>
 
           {/* Mobile cards */}
           <div className="mob-list">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 800 }}>Все игроки</span>
-              <span style={{ fontSize: 13, color: "#8C9BAB" }}>{players.length} чел.</span>
-            </div>
             <div style={{ display: "grid", gap: 10 }}>
               {players.map((p, i) => {
                 const total = p.wins + p.losses, wr = total ? Math.round(p.wins / total * 100) : 0;
@@ -1055,24 +1074,1248 @@
                   </div>
                 );
               })}
-              <div onClick={onOpenAdd}
-                style={{
-                  background: "#fff", borderRadius: 14, border: "2px dashed #9AA5B4", padding: "16px",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  gap: 6, color: "#6B7A8D"
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#E8822A"; e.currentTarget.style.background = "#FFFAF6"; e.currentTarget.style.color = "#E8822A"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#9AA5B4"; e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6B7A8D"; }}>
-                <span style={{ fontWeight: 600, fontSize: 15 }}>Добавить игрока</span>
-                <span style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>+</span>
-              </div>
+              <button onClick={onOpenAdd}
+                style={{ ...btnOutline, width:"100%", padding:"14px 0", fontSize:14, fontWeight:600, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", gap:6, boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
+                Добавить игрока +
+              </button>
             </div>
           </div>
         </div>
       );
     }
     // ── Compare Page ────────────────────────────────────────────────────────────
-    function ComparePage({ players, matches }) {
+    
+      // ── Tournament ─────────────────────────────────────────────────────────
+      function NewTournamentModal({ onClose, onSubmit }) {
+        const [name, setName] = useState("");
+        const [prizeMode, setPrizeMode] = useState("winner_takes_all");
+        const [busy, setBusy] = useState(false);
+        const [err, setErr] = useState("");
+        const valid = name.trim().length > 0;
+        async function handleSubmit() {
+          if (!valid || busy) return;
+          setBusy(true); setErr("");
+          try { await onSubmit(name.trim(), prizeMode); onClose(); }
+          catch (e) { setErr(e.message); }
+          finally { setBusy(false); }
+        }
+        return (
+          <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}
+            style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 16px" }}>
+            <div style={{ background:"#fff",borderRadius:16,width:"100%",maxWidth:420,boxShadow:"0 24px 64px rgba(0,0,0,.2)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div>
+                  <div style={{ fontSize:16,fontWeight:700 }}>🏆 Новый турнир</div>
+                  <div style={{ fontSize:12,color:"#8C9BAB",marginTop:2 }}>Настройте параметры перед стартом</div>
+                </div>
+                <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#8C9BAB",lineHeight:1,padding:"4px 8px" }}>×</button>
+              </div>
+              <div style={{ padding:"20px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div style={labelSt}>Название турнира</div>
+                <input autoFocus placeholder="Например: Пятничный турнир" value={name}
+                  onChange={e => setName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  style={{ width:"100%",padding:"11px 14px",borderRadius:8,border:"1px solid #E8EAEC",fontSize:15,color:"#1A1A1A",outline:"none",boxSizing:"border-box" }} />
+              </div>
+              <div style={{ padding:"16px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div style={labelSt}>Распределение призов</div>
+                <select value={prizeMode} onChange={e => setPrizeMode(e.target.value)}
+                  style={{ width:"100%",padding:"11px 14px",borderRadius:8,border:"1px solid #E8EAEC",fontSize:14,color:"#1A1A1A",background:"#fff",outline:"none",boxSizing:"border-box" }}>
+                  <option value="winner_takes_all">🥇 Победитель забирает всё</option>
+                  <option value="top3_split">🏅 Раздел 1–3 места</option>
+                </select>
+                {prizeMode === "top3_split" && (
+                  <div style={{ marginTop:8,padding:"8px 12px",background:"#F8F9FA",borderRadius:8,fontSize:12,color:"#5A6474",lineHeight:1.7 }}>
+                    1-е место: 60% банка · 2-е: 25% · 3-е: 15%
+                  </div>
+                )}
+              </div>
+              {err && <div style={{ margin:"0 20px",marginTop:12,padding:"10px 14px",background:"#FFEBEE",borderRadius:8,color:"#C62828",fontSize:13 }}>{err}</div>}
+              <div style={{ padding:"16px 20px" }}>
+                <button disabled={!valid || busy} onClick={handleSubmit}
+                  style={{ ...btnPrimary,width:"100%",padding:13,borderRadius:9,fontSize:15,opacity:(!valid||busy)?0.5:1,cursor:(!valid||busy)?"not-allowed":"pointer" }}>
+                  {busy ? "⏳ Создаём…" : "Создать турнир"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      let _lastBet = "";
+      function AddTournamentPlayerModal({ players, existingNames, onClose, onSubmit }) {
+        const [selIds, setSelIds] = useState([]);
+        const [bet, setBet] = useState(_lastBet);
+        const [busy, setBusy] = useState(false);
+        const [err, setErr] = useState("");
+        const available = players.filter(p => !existingNames.includes(p.name));
+        const valid = selIds.length > 0 && bet !== "" && parseInt(bet) >= 0;
+
+        function togglePlayer(id) {
+          setSelIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+        }
+
+        async function handleSubmit() {
+          if (!valid || busy) return;
+          setBusy(true); setErr("");
+          try {
+            _lastBet = bet;
+            for (const id of selIds) {
+              const p = available.find(p => String(p.id) === String(id));
+              if (p) await onSubmit(p.name, parseInt(bet));
+            }
+            onClose();
+          }
+          catch (e) { setErr(e.message); }
+          finally { setBusy(false); }
+        }
+
+        return (
+          <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}
+            style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 16px" }}>
+            <div style={{ background:"#fff",borderRadius:16,width:"100%",maxWidth:420,boxShadow:"0 24px 64px rgba(0,0,0,.2)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div style={{ fontSize:16,fontWeight:700 }}>👤 Добавить игроков</div>
+                <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#8C9BAB",lineHeight:1,padding:"4px 8px" }}>×</button>
+              </div>
+              <div style={{ padding:"16px 20px 8px" }}>
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
+                  <div style={labelSt}>Игроки {selIds.length > 0 && <span style={{ color:"#E8822A",fontWeight:700 }}>({selIds.length} выбрано)</span>}</div>
+                  {available.length > 0 && (
+                    <button onClick={() => selIds.length === available.length ? setSelIds([]) : setSelIds(available.map(p => String(p.id)))}
+                      style={{ fontSize:12,fontWeight:600,color:selIds.length===available.length?"#C62828":"#E8822A",background:"none",border:"none",cursor:"pointer",padding:"2px 4px" }}>
+                      {selIds.length === available.length ? "Снять всех" : "Выбрать всех"}
+                    </button>
+                  )}
+                </div>
+                {available.length === 0
+                  ? <div style={{ fontSize:13,color:"#8C9BAB",padding:"8px 0" }}>Все игроки уже в турнире</div>
+                  : (
+                    <div style={{ maxHeight:220,overflowY:"auto",border:"1px solid #E8EAEC",borderRadius:8,background:"#fff" }}>
+                      {available.map(p => {
+                        const sel = selIds.includes(String(p.id));
+                        return (
+                          <div key={p.id} onClick={() => togglePlayer(String(p.id))}
+                            style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",cursor:"pointer",
+                              background:sel?"#FEF3E8":"#fff",borderBottom:"1px solid #F0F2F4",
+                              transition:"background .12s" }}>
+                            <div style={{ width:18,height:18,borderRadius:4,border:`2px solid ${sel?"#E8822A":"#C8D0DA"}`,
+                              background:sel?"#E8822A":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                              {sel && <span style={{ color:"#fff",fontSize:11,fontWeight:700,lineHeight:1 }}>✓</span>}
+                            </div>
+                            <Avatar name={p.name} size={28}/>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <div style={{ fontWeight:600,fontSize:14 }}>{p.name}</div>
+                              <div style={{ fontSize:11,color:"#8C9BAB" }}>{p.rating} очков</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                }
+              </div>
+              <div style={{ padding:"8px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div style={labelSt}>Ставка для каждого 💰</div>
+                <input type="number" min="0" placeholder="0" value={bet}
+                  onChange={e => setBet(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  style={{ width:"100%",padding:"11px 14px",borderRadius:8,border:"1px solid #E8EAEC",fontSize:28,fontWeight:800,textAlign:"center",color:"#1A1A1A",outline:"none",boxSizing:"border-box" }} />
+              </div>
+              {err && <div style={{ margin:"0 20px",marginTop:12,padding:"10px 14px",background:"#FFEBEE",borderRadius:8,color:"#C62828",fontSize:13 }}>{err}</div>}
+              <div style={{ padding:"16px 20px" }}>
+                <button disabled={!valid || busy} onClick={handleSubmit}
+                  style={{ ...btnPrimary,width:"100%",padding:13,borderRadius:9,fontSize:15,opacity:(!valid||busy)?0.5:1,cursor:(!valid||busy)?"not-allowed":"pointer" }}>
+                  {busy ? "⏳…" : `Добавить ${selIds.length > 1 ? selIds.length + " игроков" : "игрока"}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function DeclareWinnerModal({ tournament, onClose, onSubmit }) {
+        const [winner, setWinner] = useState("");
+        const [busy, setBusy] = useState(false);
+        const [err, setErr] = useState("");
+        async function handleSubmit() {
+          if (!winner || busy) return;
+          setBusy(true); setErr("");
+          try { await onSubmit(winner); onClose(); }
+          catch (e) { setErr(e.message); }
+          finally { setBusy(false); }
+        }
+        return (
+          <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}
+            style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 16px" }}>
+            <div style={{ background:"#fff",borderRadius:16,width:"100%",maxWidth:420,boxShadow:"0 24px 64px rgba(0,0,0,.2)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                <div>
+                  <div style={{ fontSize:16,fontWeight:700 }}>🏆 Объявить победителя</div>
+                  <div style={{ fontSize:12,color:"#8C9BAB",marginTop:2 }}>Банк турнира: {tournament.prize_pool} 💰</div>
+                </div>
+                <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#8C9BAB",lineHeight:1,padding:"4px 8px" }}>×</button>
+              </div>
+              <div style={{ padding:"16px 20px",borderBottom:"1px solid #E8EAEC" }}>
+                {tournament.players.map(p => (
+                  <div key={p.id} onClick={() => setWinner(p.player_name)}
+                    style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,border:"2px solid",borderColor:winner===p.player_name?"#E8822A":"#E8EAEC",background:winner===p.player_name?"#FEF3E8":"#fff",cursor:"pointer",marginBottom:8,transition:"all .15s" }}>
+                    <Avatar name={p.player_name} size={36} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:700,fontSize:14 }}>{p.player_name}</div>
+                      <div style={{ fontSize:12,color:"#8C9BAB" }}>Ставка: {p.bet} 💰</div>
+                    </div>
+                    {winner === p.player_name && <span style={{ fontSize:20 }}>🏆</span>}
+                  </div>
+                ))}
+              </div>
+              {err && <div style={{ margin:"0 20px",marginTop:12,padding:"10px 14px",background:"#FFEBEE",borderRadius:8,color:"#C62828",fontSize:13 }}>{err}</div>}
+              <div style={{ padding:"16px 20px" }}>
+                <button disabled={!winner || busy} onClick={handleSubmit}
+                  style={{ ...btnPrimary,width:"100%",padding:13,borderRadius:9,fontSize:15,background:"#2E7D32",opacity:(!winner||busy)?0.5:1,cursor:(!winner||busy)?"not-allowed":"pointer" }}>
+                  {busy ? "⏳…" : "🏆 Объявить победителя"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function TournamentCard({ tournament, players, onReload, onDelete, isOpen, onToggle, autoShowAdd, onAutoShowAddDone }) {
+        const [showAdd, setShowAdd] = useState(false);
+        const [confirmRemove, setConfirmRemove] = useState(null);
+        const [busy, setBusy] = useState(false);
+        const [bracketTab, setBracketTab] = useState("bracket");
+        const [bracket, setBracketRaw] = useState(null);
+        const [bracketLoaded, setBracketLoaded] = useState(false);
+        const [finishBusy, setFinishBusy] = useState(false);
+        const [isMobile, setIsMobile] = useState(window.innerWidth <= 640);
+        const dragRef = React.useRef(null);
+        const saveTimer = React.useRef(null);
+        const tournamentId = tournament.id;
+
+        const isActive = tournament.status === "active";
+
+        const collapsed = !isOpen;
+        const [thirdPlaceMatch, setThirdPlaceMatch] = useState(null);
+
+        // Auto-open add players modal after tournament creation
+        React.useEffect(() => {
+          if (autoShowAdd && isActive) {
+            setShowAdd(true);
+            if (onAutoShowAddDone) onAutoShowAddDone();
+          }
+        }, [autoShowAdd]);
+        const prizePool = tournament.prize_pool;
+        const prizeMode = tournament.prize_mode || "winner_takes_all";
+        const existingNames = tournament.players.map(p => p.player_name);
+        const playerNames = tournament.players.map(p => p.player_name);
+
+        // Prize calculations
+        function calcPrizes(pool) {
+          if (prizeMode === "top3_split") {
+            return {
+              first: Math.round(pool * 0.6),
+              second: Math.round(pool * 0.25),
+              third: Math.round(pool * 0.15),
+            };
+          }
+          return { first: pool, second: 0, third: 0 };
+        }
+        const prizes = calcPrizes(prizePool);
+
+        // Mobile listener
+        React.useEffect(() => {
+          const fn = () => setIsMobile(window.innerWidth <= 640);
+          window.addEventListener("resize", fn);
+          return () => window.removeEventListener("resize", fn);
+        }, []);
+
+        // Build bracket with BYE support for odd player count
+        function buildBracket(names) {
+          if (names.length < 2) return null;
+          const rounds = [];
+          let current = [...names];
+          // Round 1: pair up, last odd player gets BYE (auto-advances)
+          const r1matches = [];
+          for (let i = 0; i < current.length; i += 2) {
+            if (i + 1 < current.length) {
+              r1matches.push({ p1: current[i], p2: current[i+1], winner: null, bye: false });
+            } else {
+              // Odd player: BYE match — auto-win
+              r1matches.push({ p1: current[i], p2: null, winner: current[i], bye: true });
+            }
+          }
+          rounds.push(r1matches);
+          // Subsequent rounds
+          let prevCount = r1matches.length;
+          while (prevCount > 1) {
+            const nextCount = Math.ceil(prevCount / 2);
+            const rMatches = [];
+            for (let i = 0; i < nextCount; i++) {
+              rMatches.push({ p1: null, p2: null, winner: null, bye: false });
+            }
+            rounds.push(rMatches);
+            prevCount = nextCount;
+          }
+          // Auto-propagate BYE winners into next round
+          r1matches.forEach((m, mi) => {
+            if (m.bye && m.winner && rounds.length > 1) {
+              const nextMi = Math.floor(mi / 2);
+              const isP1 = mi % 2 === 0;
+              rounds[1][nextMi][isP1 ? "p1" : "p2"] = m.winner;
+            }
+          });
+          return rounds;
+        }
+
+        // Load bracket from server on mount (once)
+        React.useEffect(() => {
+          if (bracketLoaded) return;
+          setBracketLoaded(true);
+          if (tournament.bracket_json) {
+            try {
+              const parsed = JSON.parse(tournament.bracket_json);
+              setBracketRaw(parsed);
+              return;
+            } catch(e) {}
+          }
+          // No saved bracket — build from players if enough
+          if (playerNames.length >= 2) {
+            setBracketRaw(buildBracket(playerNames));
+          }
+        }, []);
+
+        // When players added/removed in active tournament — rebuild bracket, preserving results
+        React.useEffect(() => {
+          if (!isActive || !bracketLoaded) return;
+          if (playerNames.length < 2) { setBracketRaw(null); return; }
+          setBracketRaw(prev => {
+            const fresh = buildBracket(playerNames);
+            if (!prev) return fresh;
+            // Preserve winners from existing bracket where player names still match
+            fresh.forEach((round, ri) => {
+              if (!prev[ri]) return;
+              round.forEach((match, mi) => {
+                const old = prev[ri][mi];
+                if (!old) return;
+                if (match.p1 === old.p1 && match.p2 === old.p2 && old.winner) {
+                  match.winner = old.winner;
+                }
+              });
+            });
+            return fresh;
+          });
+          setThirdPlaceMatch(null);
+        }, [playerNames.join(',')]);
+
+        // Auto-save bracket to server with debounce (only when active)
+        React.useEffect(() => {
+          if (!bracket || !isActive || !bracketLoaded) return;
+          if (saveTimer.current) clearTimeout(saveTimer.current);
+          saveTimer.current = setTimeout(() => {
+            apiFetch(`/api/tournaments/${tournamentId}/bracket`, {
+              method: "POST",
+              body: JSON.stringify({ bracket_json: JSON.stringify(bracket) })
+            }).catch(() => {});
+          }, 800);
+          return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+        }, [bracket]);
+
+        // Auto-finish tournament when bracket final winner is determined
+        React.useEffect(() => {
+          if (!bracket || !isActive) return;
+          const finalRound = bracket[bracket.length - 1];
+          if (finalRound.length !== 1) return;
+          const finalWinner = finalRound[0].winner;
+          if (!finalWinner || tournament.winner_name) return;
+
+          // If bracket has >= 3 rounds, require 3rd place match winner before finishing
+          if (bracket.length >= 3) {
+            if (!thirdPlaceMatch || !thirdPlaceMatch.winner) return;
+          }
+
+          // Progressive rating: deeper rounds = more points
+          // R1=5, R2=10, R3(QF)=15, R4(SF)=20, Final=30
+          // Bonuses: Winner +50, Runner-up +20, 3rd place +10, Participant +2
+          const totalRounds = bracket.length;
+          function roundPts(ri) {
+            return [5, 10, 15, 20, 30][Math.min(ri, 4)];
+          }
+          const ratingDeltas = {};
+          bracket.forEach((round, ri) => {
+            if (!Array.isArray(round)) return;
+            round.forEach(match => {
+              if (match.winner && !match.bye) {
+                ratingDeltas[match.winner] = (ratingDeltas[match.winner] || 0) + roundPts(ri);
+              }
+            });
+          });
+
+          // Determine 2nd place: finalist who lost the final
+          const finalMatch = finalRound[0];
+          const secondName = finalMatch.p1 === finalWinner ? finalMatch.p2 : finalMatch.p1;
+
+          // 3rd place: from the dedicated 3rd place match
+          const thirdName = thirdPlaceMatch ? thirdPlaceMatch.winner : null;
+
+          // Place bonuses
+          ratingDeltas[finalWinner] = (ratingDeltas[finalWinner] || 0) + 50;
+          if (secondName) ratingDeltas[secondName] = (ratingDeltas[secondName] || 0) + 20;
+          if (thirdName)  ratingDeltas[thirdName]  = (ratingDeltas[thirdName]  || 0) + 10;
+
+          // Participation points for players who didn't win a match
+          tournament.players.forEach(p => {
+            if (!ratingDeltas[p.player_name]) ratingDeltas[p.player_name] = 2;
+          });
+
+          setFinishBusy(true);
+          apiFetch(`/api/tournaments/${tournamentId}/finish`, {
+            method: "POST",
+            body: JSON.stringify({
+              winner_name: finalWinner,
+              second_name: secondName || null,
+              third_name: thirdName || null,
+              bracket_json: JSON.stringify(bracket),
+              rounds_won: ratingDeltas
+            })
+          }).then(() => onReload()).catch(() => {}).finally(() => setFinishBusy(false));
+        }, [bracket, thirdPlaceMatch]);
+
+        function applyWinner(ri, mi, winner) {
+          setBracketRaw(state => {
+            if (!state) return state;
+            const nb = state.map(r => r.map(m => ({ ...m })));
+            nb[ri][mi].winner = winner;
+            if (ri + 1 < nb.length) {
+              const nextMi = Math.floor(mi / 2);
+              const isP1 = mi % 2 === 0;
+              nb[ri + 1][nextMi][isP1 ? "p1" : "p2"] = winner;
+              nb[ri + 1][nextMi].winner = null;
+              for (let r = ri + 2; r < nb.length; r++) {
+                const m2 = Math.floor(mi / Math.pow(2, r - ri));
+                if (nb[r] && nb[r][m2]) { nb[r][m2].winner = null; }
+              }
+            }
+            return nb;
+          });
+        }
+
+        function clearWinner(ri, mi) {
+          setBracketRaw(state => {
+            if (!state) return state;
+            const nb = state.map(r => r.map(m => ({ ...m })));
+            nb[ri][mi].winner = null;
+            if (ri + 1 < nb.length) {
+              const nextMi = Math.floor(mi / 2);
+              const isP1 = mi % 2 === 0;
+              nb[ri + 1][nextMi][isP1 ? "p1" : "p2"] = null;
+              nb[ri + 1][nextMi].winner = null;
+              for (let r = ri + 2; r < nb.length; r++) {
+                const m2 = Math.floor(mi / Math.pow(2, r - ri));
+                if (nb[r] && nb[r][m2]) { nb[r][m2].winner = null; nb[r][m2].p1 = null; nb[r][m2].p2 = null; }
+              }
+            }
+            return nb;
+          });
+        }
+
+        function setSlotPlayer(mi, side, name) {
+          setBracketRaw(state => {
+            if (!state) return state;
+            const nb = state.map(r => r.map(m => ({ ...m })));
+            // If this player is already in another slot, clear that slot
+            if (name) {
+              nb[0].forEach((match, mIdx) => {
+                ["p1","p2"].forEach(s => {
+                  if (match[s] === name && !(mIdx === mi && s === side)) {
+                    nb[0][mIdx][s] = null;
+                    nb[0][mIdx].winner = null;
+                    nb[0][mIdx].bye = false;
+                  }
+                });
+              });
+            }
+            nb[0][mi][side] = name || null;
+            nb[0][mi].winner = null;
+            nb[0][mi].bye = false;
+            return nb;
+          });
+        }
+
+        function movePlayer(fromMatch, fromSide, toMatch, toSide) {
+          setBracketRaw(state => {
+            if (!state) return state;
+            const nb = state.map(r => r.map(m => ({ ...m })));
+            const name = fromMatch !== null
+              ? nb[0][fromMatch][fromSide]
+              : dragRef.current?.name;
+            if (!name) return state;
+            const displaced = nb[0][toMatch][toSide];
+            nb[0][toMatch][toSide] = name;
+            nb[0][toMatch].winner = null;
+            nb[0][toMatch].bye = false;
+            if (fromMatch !== null) {
+              nb[0][fromMatch][fromSide] = displaced || null;
+              nb[0][fromMatch].winner = null;
+              nb[0][fromMatch].bye = false;
+            }
+            return nb;
+          });
+        }
+
+        function clearSlot(mi, side) {
+          setBracketRaw(state => {
+            if (!state) return state;
+            const nb = state.map(r => r.map(m => ({ ...m })));
+            nb[0][mi][side] = null;
+            nb[0][mi].winner = null;
+            nb[0][mi].bye = false;
+            return nb;
+          });
+        }
+
+        function getR1PlacedNames() {
+          if (!bracket) return new Set();
+          const s = new Set();
+          bracket[0].forEach(m => {
+            if (m.p1 && m.p1 !== "BYE") s.add(m.p1);
+            if (m.p2 && m.p2 !== "BYE") s.add(m.p2);
+          });
+          return s;
+        }
+
+        function getRoundName(total, ri) {
+          const fromEnd = total - 1 - ri;
+          if (fromEnd === 0) return "Финал";
+          if (fromEnd === 1) return "Полуфинал";
+          if (fromEnd === 2) return "1/4 финала";
+          if (fromEnd === 3) return "1/8 финала";
+          return `Раунд ${ri + 1}`;
+        }
+
+        function PlayerSlot({ name, matchIdx, side, isWinner, roundIdx, isBye }) {
+          const isR1 = roundIdx === 0;
+          // All tournament players are selectable — picking one already placed will move them here
+          const pool = playerNames;
+
+          // Desktop drag handlers
+          const handleDragStart = (e) => {
+            if (!name || !isR1 || isMobile) return;
+            dragRef.current = { name, fromMatch: matchIdx, fromSide: side, fromPool: false };
+            e.dataTransfer.effectAllowed = "move";
+          };
+          const handleDrop = (e) => {
+            e.preventDefault();
+            if (!isR1 || isMobile) return;
+            const d = dragRef.current;
+            if (!d) return;
+            if (!d.fromPool && d.fromMatch === matchIdx && d.fromSide === side) { dragRef.current = null; return; }
+            if (d.fromPool) {
+              // Place from pool
+              const nb = bracket.map(r => r.map(m => ({ ...m })));
+              nb[0][matchIdx][side] = d.name;
+              nb[0][matchIdx].winner = null;
+              nb[0][matchIdx].bye = false;
+              setBracketRaw(nb);
+            } else {
+              movePlayer(d.fromMatch, d.fromSide, matchIdx, side);
+            }
+            dragRef.current = null;
+          };
+          const handleDragOver = (e) => { e.preventDefault(); };
+
+          if (isBye && !name) {
+            return (
+              <div style={{ height:34,borderRadius:7,background:"#F0F0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#C8D0DA",fontStyle:"italic" }}>
+                BYE
+              </div>
+            );
+          }
+
+          if (!isR1) {
+            if (!name) return <div style={{ height:34,borderRadius:7,background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#C8D0DA" }}>—</div>;
+            const isFinalWinner = !isActive && name === tournament.winner_name;
+            const isFinalSecond = !isActive && name === tournament.second_name;
+            const isFinalThird = !isActive && name === tournament.third_name;
+            const placeEmoji = isFinalWinner ? "🏆" : isFinalSecond ? "🥈" : isFinalThird ? "🥉" : isWinner ? "✓" : null;
+            return (
+              <div style={{ display:"flex",alignItems:"center",gap:7,padding:"0 8px",height:34,borderRadius:7,background:isWinner?"#E8F5E9":"#F8F9FA",border:isWinner?"1.5px solid #2E7D32":"1.5px solid #E8EAEC" }}>
+                <Avatar name={name} size={18}/>
+                <span style={{ fontWeight:isWinner?700:500,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:isWinner?"#2E7D32":"#1A1A1A" }}>{name}</span>
+                {placeEmoji && <span style={{ fontSize:10 }}>{placeEmoji}</span>}
+              </div>
+            );
+          }
+
+          // R1 slot — mobile: only select; desktop: drag + select overlay
+          const selectEl = (
+            <select value={name||""} onChange={e => setSlotPlayer(matchIdx, side, e.target.value)}
+              style={{ width:"100%",padding:"0 8px",height:34,borderRadius:7,border:"1px solid #E8EAEC",background:"#fff",fontSize:13,color:name?"#1A1A1A":"#C8D0DA",outline:"none",appearance:"none",WebkitAppearance:"none",boxSizing:"border-box" }}>
+              <option value="">— выбрать —</option>
+              {pool.map(n => <option key={n} value={n}>{n}</option>)}
+              {name && !pool.includes(name) && <option value={name}>{name}</option>}
+            </select>
+          );
+
+          if (isMobile) {
+            // If match already has a winner, show static chip (not a select)
+            const matchHasWinner = bracket && bracket[0] && bracket[roundIdx] && bracket[roundIdx][matchIdx]?.winner;
+            if (matchHasWinner || !isActive) {
+              return (
+                <div style={{ display:"flex",alignItems:"center",gap:7,padding:"0 8px",height:34,borderRadius:7,
+                  background:isWinner?"#E8F5E9":"#F8F9FA",border:isWinner?"1.5px solid #2E7D32":"1.5px solid #E8EAEC" }}>
+                  {name ? <><Avatar name={name} size={18}/>
+                  <span style={{ fontWeight:isWinner?700:500,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:isWinner?"#2E7D32":"#1A1A1A" }}>{name}</span>
+                  {isWinner && <span style={{ fontSize:10 }}>✓</span>}</> : <span style={{ fontSize:12,color:"#C8D0DA",flex:1 }}>—</span>}
+                </div>
+              );
+            }
+            return (
+              <div style={{ position:"relative",display:"flex",alignItems:"center",gap:6 }}>
+                {name && <Avatar name={name} size={18} style={{ flexShrink:0 }}/>}
+                {selectEl}
+              </div>
+            );
+          }
+
+          // Desktop: show styled chip with drag, invisible select overlay
+          return (
+            <div style={{ position:"relative" }}>
+              {name ? (
+                <div draggable onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop}
+                  style={{ display:"flex",alignItems:"center",gap:7,padding:"0 28px 0 8px",height:34,borderRadius:7,cursor:"grab",
+                    background:isWinner?"#E8F5E9":"#fff",border:isWinner?"1.5px solid #2E7D32":"1.5px solid #E8EAEC",userSelect:"none" }}>
+                  <Avatar name={name} size={18}/>
+                  <span style={{ fontWeight:500,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{name}</span>
+                </div>
+              ) : (
+                <div onDragOver={handleDragOver} onDrop={handleDrop}
+                  style={{ height:34,borderRadius:7,border:"2px dashed #D0D5DD",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#C8D0DA",background:"#FAFBFC" }}>
+                  ↓ перетяни
+                </div>
+              )}
+              <select value={name||""} onChange={e => setSlotPlayer(matchIdx, side, e.target.value)}
+                style={{ position:"absolute",inset:0,opacity:0,cursor:"pointer",width:"100%",height:"100%" }}>
+                <option value="">— выбрать —</option>
+                {pool.map(n => <option key={n} value={n}>{n}</option>)}
+                {name && !pool.includes(name) && <option value={name}>{name}</option>}
+              </select>
+            </div>
+          );
+        }
+
+        function MatchCard({ match, matchIdx, roundIdx }) {
+          const canPlay = match.p1 && match.p2 && !match.bye;
+          const isBye = match.bye;
+          return (
+            <div style={{ background:"#FAFBFC",borderRadius:10,border:"1px solid #E8EAEC",overflow:"hidden" }}>
+              <div style={{ padding:"5px 5px 3px" }}>
+                <PlayerSlot name={match.p1} matchIdx={matchIdx} side="p1" isWinner={match.winner===match.p1&&!isBye} roundIdx={roundIdx} isBye={false}/>
+              </div>
+              <div style={{ height:1,background:"#E8EAEC",margin:"0 5px" }}/>
+              <div style={{ padding:"3px 5px 5px" }}>
+                {isBye
+                  ? <div style={{ height:34,borderRadius:7,background:"#F0F0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#C8D0DA",fontStyle:"italic" }}>BYE — авто-проход</div>
+                  : <PlayerSlot name={match.p2} matchIdx={matchIdx} side="p2" isWinner={match.winner===match.p2} roundIdx={roundIdx} isBye={false}/>
+                }
+              </div>
+              {isBye && match.p1 && (
+                <div style={{ padding:"3px 5px 5px",borderTop:"1px solid #F0F0F0",display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#2E7D32",fontWeight:600 }}>
+                  <span>✓</span> {match.p1} проходит автоматически
+                </div>
+              )}
+              {canPlay && !match.winner && (
+                <div style={{ display:"flex",gap:3,padding:"4px 5px 5px",borderTop:"1px solid #F0F0F0" }}>
+                  {[{n:match.p1,s:"p1"},{n:match.p2,s:"p2"}].map(btn => (
+                    <button key={btn.s} onClick={() => applyWinner(roundIdx, matchIdx, btn.n)}
+                      style={{ flex:1,padding:"4px 4px",borderRadius:6,border:"1px solid #E8EAEC",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#2E7D32",transition:"background .1s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="#E8F5E9"}
+                      onMouseLeave={e=>e.currentTarget.style.background="#fff"}>
+                      {btn.n.split(" ")[0]} ✓
+                    </button>
+                  ))}
+                </div>
+              )}
+              {match.winner && !isBye && isActive && (
+                <div style={{ display:"flex",justifyContent:"flex-end",padding:"2px 5px 3px",borderTop:"1px solid #F0F0F0" }}>
+                  <button onClick={() => clearWinner(roundIdx, matchIdx)}
+                    style={{ fontSize:10,color:"#8C9BAB",background:"none",border:"none",cursor:"pointer",padding:"2px 4px" }}>сбросить</button>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        function BracketView() {
+          if (!bracket) {
+            return (
+              <div style={{ padding:"28px 20px",textAlign:"center",color:"#8C9BAB",fontSize:14 }}>
+                {playerNames.length < 2
+                  ? "Добавьте минимум 2 игроков — сетка создастся автоматически"
+                  : <button onClick={() => setBracketRaw(buildBracket(playerNames))} style={{ ...btnOutline,padding:"8px 18px",fontSize:14 }}>Создать сетку</button>
+                }
+              </div>
+            );
+          }
+
+          const placed = getR1PlacedNames();
+          const pool = playerNames.filter(n => !placed.has(n));
+          const totalRounds = bracket.length;
+          const finalWinner = bracket[totalRounds-1][0]?.winner;
+
+          const poolDrop = (e) => {
+            e.preventDefault();
+            const d = dragRef.current;
+            if (!d || d.fromPool) return;
+            clearSlot(d.fromMatch, d.fromSide);
+            dragRef.current = null;
+          };
+
+          return (
+            <div style={{ padding:"16px 20px" }}>
+              {/* Unplaced players pool — desktop only */}
+              {!isMobile && pool.length > 0 && (
+                <div onDragOver={e=>e.preventDefault()} onDrop={poolDrop}
+                  style={{ marginBottom:14,padding:"10px 12px",background:"#F8F9FA",borderRadius:10,border:"1px solid #E8EAEC" }}>
+                  <div style={{ fontSize:11,fontWeight:700,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.7,marginBottom:8 }}>
+                    Вне сетки — перетяни или нажми на слот:
+                  </div>
+                  <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
+                    {pool.map(name => {
+                      const ds = (e) => {
+                        dragRef.current = {name, fromMatch:null, fromSide:null, fromPool:true};
+                        e.dataTransfer.effectAllowed="move";
+                      };
+                      return (
+                        <div key={name} draggable onDragStart={ds}
+                          style={{ display:"flex",alignItems:"center",gap:7,padding:"5px 10px",background:"#fff",borderRadius:8,border:"1px solid #E8EAEC",cursor:"grab",userSelect:"none" }}>
+                          <Avatar name={name} size={18}/>
+                          <span style={{ fontWeight:600,fontSize:13 }}>{name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {finishBusy && <div style={{ marginBottom:14,padding:"8px 14px",background:"#F0FBF1",borderRadius:8,fontSize:13,color:"#2E7D32",fontWeight:600 }}>⏳ Сохраняем результаты турнира…</div>}
+
+              {/* 3rd place match — shown when semifinal losers are known and bracket has >= 3 rounds */}
+              {isActive && bracket && bracket.length >= 3 && (() => {
+                const semiFinalRound = bracket[bracket.length - 2];
+                const semiLosers = semiFinalRound
+                  .filter(m => m.winner && !m.bye)
+                  .map(m => m.winner === m.p1 ? m.p2 : m.p1)
+                  .filter(Boolean);
+                if (semiLosers.length < 2) return null;
+                const tpm = thirdPlaceMatch || { p1: semiLosers[0], p2: semiLosers[1], winner: null };
+                // Update if players changed
+                const applyThirdWinner = (winner) => {
+                  setThirdPlaceMatch({ p1: tpm.p1, p2: tpm.p2, winner });
+                };
+                return (
+                  <div style={{ marginBottom:14,padding:"10px 14px",background:"#F8F9FA",borderRadius:10,border:"1px solid #E8EAEC" }}>
+                    <div style={{ fontSize:11,fontWeight:700,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.7,marginBottom:8 }}>🥉 Матч за 3-е место</div>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                      {[{n:tpm.p1,s:"p1"},{n:tpm.p2,s:"p2"}].map((btn,i) => (
+                        <React.Fragment key={btn.s}>
+                          {i===1 && <span style={{ fontSize:13,color:"#C8D0DA",fontWeight:700 }}>vs</span>}
+                          <div style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:8,border:tpm.winner===btn.n?"2px solid #6A1B9A":"1px solid #E8EAEC",background:tpm.winner===btn.n?"#F3E5F5":"#fff" }}>
+                            <Avatar name={btn.n} size={20}/>
+                            <span style={{ fontWeight:600,fontSize:13 }}>{btn.n}</span>
+                            {tpm.winner===btn.n && <span style={{ fontSize:12 }}>🥉</span>}
+                          </div>
+                        </React.Fragment>
+                      ))}
+                      {!tpm.winner && (
+                        <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
+                          {[tpm.p1,tpm.p2].map(n => (
+                            <button key={n} onClick={() => applyThirdWinner(n)}
+                              style={{ padding:"5px 10px",borderRadius:6,border:"1px solid #E8EAEC",background:"#fff",cursor:"pointer",fontSize:12,fontWeight:600,color:"#6A1B9A" }}>
+                              {n.split(" ")[0]} 🥉
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {tpm.winner && (
+                        <button onClick={() => applyThirdWinner(null)} style={{ marginLeft:"auto",fontSize:10,color:"#8C9BAB",background:"none",border:"none",cursor:"pointer" }}>сбросить</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Desktop horizontal bracket */}
+              <div className="hide-mob" style={{ overflowX:"auto",paddingBottom:4 }}>
+                <div style={{ display:"flex",gap:16,minWidth:"max-content",alignItems:"flex-start" }}>
+                  {bracket.map((round, ri) => {
+                    const matchH = 102;
+                    const matchGap = 10;
+                    const span = Math.pow(2, ri);
+                    const gap = span > 1 ? (span - 1) * (matchH + matchGap) + matchGap : matchGap;
+                    const topPad = ri > 0 ? ((span - 1) * (matchH + matchGap)) / 2 : 0;
+                    return (
+                      <div key={ri} style={{ minWidth:210,flexShrink:0 }}>
+                        <div style={{ fontSize:11,fontWeight:700,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.7,marginBottom:10,textAlign:"center" }}>
+                          {getRoundName(totalRounds, ri)}
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",gap,paddingTop:topPad }}>
+                          {round.map((match, mi) => (
+                            <MatchCard key={mi} match={match} matchIdx={mi} roundIdx={ri}/>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile vertical bracket */}
+              <div className="mob-list">
+                {bracket.map((round, ri) => (
+                  <div key={ri} style={{ marginBottom:16 }}>
+                    <div style={{ fontSize:11,fontWeight:700,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.7,marginBottom:8 }}>
+                      {getRoundName(totalRounds, ri)}
+                    </div>
+                    <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                      {round.map((match, mi) => (
+                        <MatchCard key={mi} match={match} matchIdx={mi} roundIdx={ri}/>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+
+            </div>
+          );
+        }
+
+        async function addPlayer(playerName, bet) {
+          await apiFetch(`/api/tournaments/${tournamentId}/players`, {
+            method: "POST", body: JSON.stringify({ player_name: playerName, bet })
+          });
+          await onReload();
+        }
+        async function removePlayer() {
+          setBusy(true);
+          try {
+            await apiFetch(`/api/tournaments/${tournamentId}/players/${confirmRemove}`, { method: "DELETE" });
+            setConfirmRemove(null);
+            await onReload();
+          } finally { setBusy(false); }
+        }
+
+        // Rating delta label
+        function RatingDelta({ delta }) {
+          if (delta === undefined || delta === null || delta === 0) return null;
+          const pos = delta > 0;
+          return (
+            <span style={{ fontSize:11,fontWeight:700,color:pos?"#2E7D32":"#C62828",background:pos?"#E8F5E9":"#FFEBEE",borderRadius:5,padding:"1px 5px",marginLeft:4 }}>
+              {pos?"+":" "}{delta}
+            </span>
+          );
+        }
+
+        // Completed tournament places
+        const place1 = tournament.winner_name;
+        const place2 = tournament.second_name;
+        const place3 = tournament.third_name;
+
+        // Rating points earned by winner (for header display)
+        const winnerPlayer = !isActive && tournament.players.find(p => p.player_name === tournament.winner_name);
+        const winnerRatingDelta = winnerPlayer ? winnerPlayer.rating_delta : null;
+
+        return (
+          <div style={{ ...card, marginBottom: 14 }}>
+            {confirmRemove && <ConfirmModal text="Удалить игрока из турнира?" onConfirm={removePlayer} onCancel={() => setConfirmRemove(null)} loading={busy} />}
+
+            {/* ── Header ── */}
+            <div style={ch}>
+              {/* Collapse button for finished — left of title */}
+              {(
+                <button onClick={onToggle} style={{
+                  background:"none", border:"1px solid #E8EAEC", borderRadius:6,
+                  padding:0, width:30, height:30, cursor:"pointer", color:"#8C9BAB",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all .15s", lineHeight:0, flexShrink:0, marginRight:10
+                }}
+                  onMouseEnter={e=>{e.currentTarget.style.background="#F2F3F5";e.currentTarget.style.borderColor="#C8D0DA";e.currentTarget.style.color="#1A1A1A";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="none";e.currentTarget.style.borderColor="#E8EAEC";e.currentTarget.style.color="#8C9BAB";}}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    {collapsed
+                      ? <><polyline points="6 9 12 15 18 9"/></>
+                      : <><polyline points="6 15 12 9 18 15"/></>
+                    }
+                  </svg>
+                </button>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                  <span style={{ fontSize:15,fontWeight:700 }}>{isActive ? "⚔️" : "🏁"} {tournament.name}</span>
+                  {isActive && (
+                    <span style={{ display:"inline-flex",alignItems:"center",gap:5,background:"#FFF0F0",border:"1px solid #FFCDD2",borderRadius:20,padding:"2px 8px 2px 6px",flexShrink:0 }}>
+                      <span className="live-dot" style={{ width:7,height:7,borderRadius:"50%",background:"#E53935",display:"inline-block",flexShrink:0 }}/>
+                      <span style={{ fontSize:10,fontWeight:800,color:"#E53935",letterSpacing:.8 }}>LIVE</span>
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize:11,color:"#8C9BAB",marginTop:2 }}>{prizeMode === "top3_split" ? "🏅 Раздел призов 1–3 место" : "🥇 Победитель забирает всё"}</div>
+              </div>
+
+              {/* Desktop: stats + winner inline on right */}
+              <div className="desk-flex" style={{ alignItems:"center", gap:20, flexShrink:0, marginLeft:12 }}>
+                {/* Stats pills */}
+                <div style={{ display:"flex", gap:16 }}>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:11,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5 }}>Игроков</div>
+                    <div style={{ fontSize:15,fontWeight:800,color:"#1A1A1A" }}>{tournament.players.length}</div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:11,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5 }}>Банк</div>
+                    <div style={{ fontSize:15,fontWeight:800,color:"#E8822A" }}>{prizePool} 💰</div>
+                  </div>
+                  {!isActive && place1 && (
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:11,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5 }}>{prizeMode==="winner_takes_all"?"Победитель":"1-е место"}</div>
+                      <div style={{ fontSize:15,fontWeight:800,color:"#2E7D32" }}>{place1}</div>
+                    </div>
+                  )}
+                </div>
+                {isActive && <button onClick={() => setShowAdd(true)} style={{ ...btnOutline,padding:"7px 14px",fontSize:13 }}>+ Игрок</button>}
+                <button className="del-btn" onClick={() => onDelete(tournamentId)} style={delBtn}><TrashIcon /></button>
+              </div>
+
+              {/* Mobile: just action buttons */}
+              <div className="mob" style={{ gap:8, flexShrink:0, marginLeft:8 }}>
+                {isActive && <button onClick={() => setShowAdd(true)} style={{ ...btnOutline,padding:"7px 12px",fontSize:13 }}>+ Игрок</button>}
+                <button className="del-btn" onClick={() => onDelete(tournamentId)} style={delBtn}><TrashIcon /></button>
+              </div>
+            </div>
+
+            {/* Mobile stats tiles — always visible */}
+            <div className="mob" style={{ display:"none", flexWrap:"wrap", gap:8, padding:"12px 16px", borderBottom:"1px solid #E8EAEC", background:"#FAFBFC" }}>
+              {/* Basic stats */}
+              <div style={{ flex:"1 1 calc(50% - 8px)",minWidth:100,background:"#fff",borderRadius:10,border:"1px solid #E8EAEC",padding:"10px 14px" }}>
+                <div style={{ fontSize:10,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5,marginBottom:3 }}>Игроков</div>
+                <div style={{ fontSize:16,fontWeight:800,color:"#1A1A1A" }}>{tournament.players.length}</div>
+              </div>
+              <div style={{ flex:"1 1 calc(50% - 8px)",minWidth:100,background:"#fff",borderRadius:10,border:"1px solid #E8EAEC",padding:"10px 14px" }}>
+                <div style={{ fontSize:10,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5,marginBottom:3 }}>Банк 💰</div>
+                <div style={{ fontSize:16,fontWeight:800,color:"#E8822A" }}>{prizePool}</div>
+              </div>
+              {/* Place tiles for finished tournaments */}
+              {!isActive && (() => {
+                const getMob = (icon, label, name, prize) => {
+                  if (!name) return null;
+                  const pl = tournament.players.find(p => p.player_name === name);
+                  const rd = pl ? pl.rating_delta : null;
+                  return (
+                    <div key={label} style={{ flex:"1 1 calc(50% - 8px)",minWidth:100,background:"#fff",borderRadius:10,border:"1px solid #E8EAEC",padding:"10px 14px" }}>
+                      <div style={{ fontSize:10,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.5,marginBottom:3 }}>{icon} {label}</div>
+                      <div style={{ fontSize:14,fontWeight:800,color:"#1A1A1A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{name}</div>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap" }}>
+                        <span style={{ fontSize:12,fontWeight:700,color:"#E8822A" }}>{prize} 💰</span>
+                        {rd !== null && rd !== 0 && (
+                          <span style={{ fontSize:11,fontWeight:700,color:rd>0?"#2E7D32":"#C62828",background:rd>0?"#E8F5E9":"#FFEBEE",borderRadius:5,padding:"1px 5px" }}>
+                            {rd>0?"+":""}{rd}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                };
+                return [
+                  getMob("🥇", prizeMode==="winner_takes_all"?"Победитель":"1-е место", place1, prizeMode==="winner_takes_all"?prizePool:prizes.first),
+                  ...(prizeMode==="top3_split" ? [
+                    getMob("🥈", "2-е место", place2, prizes.second),
+                    getMob("🥉", "3-е место", place3, prizes.third),
+                  ] : []),
+                ].filter(Boolean);
+              })()}
+            </div>
+
+            {/* Desktop: horizontal stats row (only for active; finished shows inline in header) */}
+            {isActive && (
+              <div className="desk-flex" style={{ display:"none", borderBottom:"1px solid #E8EAEC" }}>
+                {[{label:"Игроков",val:tournament.players.length,bg:"#F8F9FA"},{label:"Банк 💰",val:prizePool,bg:"#FEF9F0"}].map(s => (
+                  <div key={s.label} style={{ flex:1,padding:"10px 18px",background:s.bg,borderRight:"1px solid #E8EAEC" }}>
+                    <div style={{ fontSize:11,color:"#8C9BAB",textTransform:"uppercase",letterSpacing:.6,marginBottom:2 }}>{s.label}</div>
+                    <div style={{ fontSize:20,fontWeight:800 }}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Finished: top-3 places row (desktop) */}
+            {!isActive && (place1 || place2 || place3) && (
+              <div className="desk-flex" style={{ display:"none", borderBottom:"1px solid #E8EAEC", flexWrap:"wrap" }}>
+                {(() => {
+                  const getRatingDelta = (name) => {
+                    const pl = tournament.players.find(p => p.player_name === name);
+                    return pl ? pl.rating_delta : null;
+                  };
+                  const places = [
+                    { icon:"🥇", label:prizeMode==="winner_takes_all"?"Победитель":"1-е место", name:place1, prize:prizeMode==="winner_takes_all"?prizePool:prizes.first },
+                    ...(prizeMode==="top3_split" ? [
+                      { icon:"🥈", label:"2-е место", name:place2, prize:prizes.second },
+                      { icon:"🥉", label:"3-е место", name:place3, prize:prizes.third },
+                    ] : []),
+                  ].filter(p => p.name);
+                  return places.map(p => {
+                    const rd = getRatingDelta(p.name);
+                    return (
+                      <div key={p.label} style={{ flex:"1 1 120px",padding:"10px 16px",borderRight:"1px solid #E8EAEC",minWidth:0 }}>
+                        <div style={{ fontSize:11,color:"#8C9BAB",marginBottom:3 }}>{p.icon} {p.label}</div>
+                        <div style={{ fontWeight:700,fontSize:14,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{p.name}</div>
+                        <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:2,flexWrap:"wrap" }}>
+                          <span style={{ fontSize:12,color:"#E8822A",fontWeight:700 }}>{p.prize} 💰</span>
+                          {rd !== null && rd !== 0 && (
+                            <span style={{ fontSize:11,fontWeight:700,color:rd>0?"#2E7D32":"#C62828",background:rd>0?"#E8F5E9":"#FFEBEE",borderRadius:5,padding:"1px 6px" }}>
+                              {rd>0?"+":""}{rd}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+                <div style={{ flex:"1 1 120px",padding:"10px 16px",minWidth:0 }}>
+                  <div style={{ fontSize:11,color:"#8C9BAB",marginBottom:3 }}>Банк</div>
+                  <div style={{ fontWeight:700,fontSize:14 }}>{prizePool} 💰</div>
+                  <div style={{ fontSize:11,color:"#8C9BAB" }}>{tournament.players.length} игроков</div>
+                </div>
+              </div>
+            )}
+
+            {!collapsed && (<>
+
+            {tournament.players.length > 0 && (
+              <div style={{ display:"flex",borderBottom:"1px solid #E8EAEC",background:"#FAFBFC" }}>
+                {[{id:"bracket",label:"🏆 Сетка"},{id:"players",label:"👤 Игроки"}].map(tab => (
+                  <button key={tab.id} onClick={() => setBracketTab(tab.id)}
+                    style={{ flex:1,padding:"9px 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:bracketTab===tab.id?700:500,
+                      background:"none",color:bracketTab===tab.id?"#E8822A":"#8C9BAB",
+                      borderBottom:bracketTab===tab.id?"2px solid #E8822A":"2px solid transparent",transition:"all .15s" }}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {(bracketTab === "players" || tournament.players.length === 0) && (
+              <>
+                {tournament.players.length === 0 ? (
+                  <div style={{ padding:"32px 20px",color:"#8C9BAB",fontSize:14,textAlign:"center" }}>
+                    <div style={{ fontSize:36,marginBottom:8 }}>🎮</div>
+                    {isActive ? "Добавь первого игрока!" : "Турнир без игроков"}
+                  </div>
+                ) : (() => {
+                  // Sort players: finished → by place; active → original order
+                  const placeOrder = { [place1]:1, [place2]:2, [place3]:3 };
+                  const sortedPlayers = !isActive
+                    ? [...tournament.players].sort((a,b) => {
+                        const pa = placeOrder[a.player_name] || 999;
+                        const pb = placeOrder[b.player_name] || 999;
+                        return pa - pb;
+                      })
+                    : tournament.players;
+
+                  return (
+                  <>
+                    <table className="desk-table" style={{ width:"100%",borderCollapse:"collapse" }}>
+                      <thead><tr>
+                        {["#","Игрок","Ставка","Доля в банке",...(!isActive?["Приз","Рейтинг"]:[""])].map((h,i) => <th key={i} style={th}>{h}</th>)}
+                      </tr></thead>
+                      <tbody>
+                        {sortedPlayers.map((p,i) => {
+                          const share = prizePool > 0 ? Math.round(p.bet / prizePool * 100) : 0;
+                          const isWinner = !isActive && tournament.winner_name === p.player_name;
+                          const isSecond = !isActive && tournament.second_name === p.player_name;
+                          const isThird = !isActive && tournament.third_name === p.player_name;
+                          const placeEmoji = isWinner ? "🏆" : isSecond ? "🥈" : isThird ? "🥉" : null;
+                          const prizeWon = isWinner ? (prizeMode==="winner_takes_all"?prizePool:prizes.first) : isSecond ? prizes.second : isThird ? prizes.third : 0;
+                          return (
+                            <tr key={p.id} className="row-hover" style={{ borderBottom:"1px solid #E8EAEC",background:isWinner?"#F0FBF1":isSecond?"#F5F0FA":isThird?"#FBF5E6":undefined }}>
+                              <td style={{ ...td,width:36,fontWeight:700,color:"#8C9BAB" }}>{i+1}</td>
+                              <td style={td}><div style={{ display:"flex",alignItems:"center",gap:10 }}><Avatar name={p.player_name} size={30}/><span style={{ fontWeight:600 }}>{p.player_name}</span>{placeEmoji&&<span>{placeEmoji}</span>}</div></td>
+                              <td style={{ ...td,fontWeight:800,fontSize:16,color:"#E8822A" }}>{p.bet} 💰</td>
+                              <td style={td}>
+                                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                                  <div style={{ flex:1,height:6,background:"#F0F0F0",borderRadius:3,overflow:"hidden",minWidth:60 }}>
+                                    <div style={{ height:"100%",width:`${share}%`,background:"#E8822A",borderRadius:3 }}/>
+                                  </div>
+                                  <span style={{ fontSize:12,fontWeight:600,color:"#8C9BAB",minWidth:32 }}>{share}%</span>
+                                </div>
+                              </td>
+                              {!isActive && (
+                                <td style={td}>
+                                  {prizeWon > 0
+                                    ? <span style={{ fontSize:13,fontWeight:800,color:"#E8822A" }}>{prizeWon} 💰</span>
+                                    : <span style={{ fontSize:12,color:"#C8D0DA" }}>—</span>
+                                  }
+                                </td>
+                              )}
+                              {!isActive && (
+                                <td style={td}>
+                                  {p.rating_delta !== 0 && p.rating_delta !== undefined
+                                    ? <span style={{ fontSize:12,fontWeight:700,color:p.rating_delta>0?"#2E7D32":"#C62828",background:p.rating_delta>0?"#E8F5E9":"#FFEBEE",borderRadius:5,padding:"2px 7px" }}>
+                                        {p.rating_delta>0?"+":""}{p.rating_delta}
+                                      </span>
+                                    : <span style={{ fontSize:12,color:"#C8D0DA" }}>—</span>
+                                  }
+                                </td>
+                              )}
+                              {isActive && <td style={{ ...td,textAlign:"right",width:1 }}><button className="del-btn" onClick={() => setConfirmRemove(p.id)} style={delBtn}><TrashIcon/></button></td>}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <div className="mob-list">
+                      {sortedPlayers.map((p,i) => {
+                        const share = prizePool > 0 ? Math.round(p.bet / prizePool * 100) : 0;
+                        const isWinner = !isActive && tournament.winner_name === p.player_name;
+                        const isSecond = !isActive && tournament.second_name === p.player_name;
+                        const isThird = !isActive && tournament.third_name === p.player_name;
+                        const placeEmoji = isWinner ? "🏆" : isSecond ? "🥈" : isThird ? "🥉" : null;
+                        const prizeWon = isWinner ? (prizeMode==="winner_takes_all"?prizePool:prizes.first) : isSecond ? prizes.second : isThird ? prizes.third : 0;
+                        return (
+                          <div key={p.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderBottom:"1px solid #E8EAEC",background:isWinner?"#F0FBF1":isSecond?"#F5F0FA":isThird?"#FBF5E6":undefined }}>
+                            <span style={{ fontWeight:700,fontSize:12,color:"#8C9BAB",minWidth:18,textAlign:"center" }}>{i+1}</span>
+                            <Avatar name={p.player_name} size={34}/>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <div style={{ fontWeight:700,fontSize:14 }}>{p.player_name} {placeEmoji||""}</div>
+                              <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:1,flexWrap:"wrap" }}>
+                                <span style={{ fontSize:12,color:"#8C9BAB" }}>Ставка: {p.bet} 💰 · {share}%</span>
+                                {prizeWon > 0 && <span style={{ fontSize:11,fontWeight:700,color:"#E8822A" }}>{prizeWon} 💰</span>}
+                                {!isActive && p.rating_delta !== 0 && p.rating_delta !== undefined && (
+                                  <span style={{ fontSize:11,fontWeight:700,color:p.rating_delta>0?"#2E7D32":"#C62828",background:p.rating_delta>0?"#E8F5E9":"#FFEBEE",borderRadius:5,padding:"1px 5px" }}>
+                                    {p.rating_delta>0?"+":""}{p.rating_delta}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {isActive && <button className="del-btn" onClick={() => setConfirmRemove(p.id)} style={delBtn}><TrashIcon/></button>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                  );
+                })()}
+              </>
+            )}
+
+            {bracketTab === "bracket" && tournament.players.length > 0 && <BracketView />}
+
+            </>)}
+
+            {showAdd && <AddTournamentPlayerModal players={players} existingNames={existingNames} onClose={() => setShowAdd(false)} onSubmit={addPlayer}/>}
+          </div>
+        );
+      }
+
+      function TournamentPage({ tournaments, players, onReload }) {
+        const [showNew, setShowNew] = useState(false);
+        const [confirmDelete, setConfirmDelete] = useState(null);
+        const [delLoading, setDelLoading] = useState(false);
+        // openId: id of the tournament whose content is expanded; null = all collapsed
+        const firstActive = tournaments.find(t => t.status === "active");
+        const [openId, setOpenId] = useState(firstActive ? firstActive.id : null);
+        const active = tournaments.filter(t => t.status === "active");
+        const finished = tournaments.filter(t => t.status === "finished");
+
+        // When tournaments list changes (e.g. new one created), open the newest active one
+        React.useEffect(() => {
+          if (active.length > 0) {
+            // If nothing is open or previously open tournament no longer exists, open the latest active
+            const openStillExists = tournaments.find(t => t.id === openId);
+            if (!openStillExists) setOpenId(active[active.length - 1].id);
+          }
+        }, [tournaments.map(t=>t.id).join(',')]);
+
+        const [showAddForId, setShowAddForId] = useState(null);
+
+        async function createTournament(name, prizeMode) {
+          const newT = await apiFetch("/api/tournaments", { method:"POST", body:JSON.stringify({ name, prize_mode: prizeMode }) });
+          if (newT && newT.id) {
+            setOpenId(newT.id);
+            setShowAddForId(newT.id);
+          }
+          onReload();
+        }
+        async function handleDelete() {
+          setDelLoading(true);
+          try {
+            await apiFetch(`/api/tournaments/${confirmDelete}`, { method:"DELETE" });
+            if (confirmDelete === openId) setOpenId(null);
+            setConfirmDelete(null);
+            onReload();
+          } finally { setDelLoading(false); }
+        }
+
+        function handleToggle(id) {
+          setOpenId(prev => prev === id ? null : id);
+        }
+
+        return (
+          <div>
+            {confirmDelete && <ConfirmModal text="Удалить турнир и все ставки?" onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={delLoading}/>}
+
+            {(() => {
+              // ── Compute tournament stats ──
+              const totalPrizePool = tournaments.reduce((s, t) => s + (t.prize_pool || 0), 0);
+              const finishedWithWinner = finished.filter(t => t.winner_name);
+              // Most successful player: most tournament wins
+              const winCounts = {};
+              finishedWithWinner.forEach(t => { winCounts[t.winner_name] = (winCounts[t.winner_name] || 0) + 1; });
+              const topWinner = Object.entries(winCounts).sort((a,b) => b[1]-a[1])[0];
+              // Biggest single tournament prize pool
+              const biggestT = tournaments.length ? tournaments.reduce((a, b) => (b.prize_pool||0) > (a.prize_pool||0) ? b : a) : null;
+              // Total participants across all tournaments (unique names)
+              const allParticipants = new Set(tournaments.flatMap(t => (t.players||[]).map(p => p.player_name)));
+
+              return (
+                <>
+                  {/* Stat widgets */}
+                  {tournaments.length > 0 && (
+                    <div className="stats-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:14 }}>
+                      <StatCard label="Всего турниров" value={tournaments.length} icon="🏆" />
+                      {topWinner && <StatCard label="Лучший игрок" value={topWinner[0].split(" ")[0]} icon="👑" />}
+                      {biggestT && biggestT.prize_pool > 0 && <StatCard label="Макс. банк" value={biggestT.prize_pool + " 💰"} icon="🎯" />}
+                      {finishedWithWinner.length > 0 && <StatCard label="Всего призовых" value={finishedWithWinner.reduce((s,t) => s+(t.prize_pool||0),0) + " 💰"} icon="🏅" />}
+                    </div>
+                  )}
+
+                  {/* New tournament button */}
+                  <button onClick={() => setShowNew(true)}
+                    style={{ ...btnPrimary, width:"100%", padding:"13px 0", fontSize:15, fontWeight:700, borderRadius:10, marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    🏆 Новый турнир
+                  </button>
+
+                  {active.length === 0 && finished.length === 0 ? (
+                    <div style={{ ...card, padding:"60px 20px", textAlign:"center" }}>
+                      <div style={{ fontSize:52 }}>🏆</div>
+                      <div style={{ fontSize:15, color:"#8C9BAB", marginTop:12, lineHeight:1.6 }}>Нет турниров.<br/>Создай первый и добавь игроков со ставками!</div>
+                    </div>
+                  ) : (
+                    <>
+                      {active.map(t => <TournamentCard key={t.id} tournament={t} players={players} onReload={onReload} onDelete={id => setConfirmDelete(id)} isOpen={openId===t.id} onToggle={() => handleToggle(t.id)} autoShowAdd={showAddForId===t.id} onAutoShowAddDone={() => setShowAddForId(null)}/>)}
+
+                      {finished.map(t => <TournamentCard key={t.id} tournament={t} players={players} onReload={onReload} onDelete={id => setConfirmDelete(id)} isOpen={openId===t.id} onToggle={() => handleToggle(t.id)}/>)}
+                    </>
+                  )}
+                </>
+              );
+            })()}
+            {showNew && <NewTournamentModal onClose={() => setShowNew(false)} onSubmit={createTournament}/>}
+          </div>
+        );
+      }
+
+      function ComparePage({ players, matches }) {
       const [p1id, setP1id] = useState("");
       const [p2id, setP2id] = useState("");
 
@@ -1111,10 +2354,10 @@
           <div style={{ ...card, marginBottom: 14 }}>
             <div style={ch}><span style={{ fontSize: 15, fontWeight: 700 }}>Сравнение — личные встречи</span></div>
             <div style={{ padding: "16px 20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", gap: 10, alignItems: "end" }}>
-                <div><div style={labelSt}>Игрок 1</div><PlayerSelect value={p1id} onChange={id=>setP1id(id)} players={players.filter(p=>String(p.id)!==String(p2id))} placeholder="Выбрать..."/></div>
-                <div style={{ textAlign:"center", fontSize:13, fontWeight:800, color:"#C8D0DA", paddingBottom:10 }}>VS</div>
-                <div><div style={labelSt}>Игрок 2</div><PlayerSelect value={p2id} onChange={id=>setP2id(id)} players={players.filter(p=>String(p.id)!==String(p1id))} placeholder="Выбрать..."/></div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+                <div style={{ flex: "1 1 140px", minWidth: 0 }}><div style={labelSt}>Игрок 1</div><PlayerSelect value={p1id} onChange={id=>setP1id(id)} players={players.filter(p=>String(p.id)!==String(p2id))} placeholder="Выбрать..."/></div>
+                <div style={{ flexShrink: 0, textAlign:"center", fontSize:13, fontWeight:800, color:"#C8D0DA", paddingBottom:10, minWidth: 28 }}>VS</div>
+                <div style={{ flex: "1 1 140px", minWidth: 0 }}><div style={labelSt}>Игрок 2</div><PlayerSelect value={p2id} onChange={id=>setP2id(id)} players={players.filter(p=>String(p.id)!==String(p1id))} placeholder="Выбрать..."/></div>
               </div>
             </div>
           </div>
@@ -1258,7 +2501,7 @@
                       <div key={m.id} style={{padding:"14px 20px",borderBottom:"1px solid #E8EAEC"}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                           <div style={{flex:1}}><TeamCell name={m.p1} name2={m.p1b} isWinner={m.winner===m.p1} size={24} ratings={{}}/></div>
-                          <span style={{fontSize:15,fontWeight:800,color:"#1A1A1A",padding:"0 6px",flexShrink:0}}>{m.s1}:{m.s2}</span>
+                          <span style={{padding:"4px 12px",background:"#F5F5F5",borderRadius:20,fontWeight:800,fontSize:15,flexShrink:0}}>{m.s1}:{m.s2}</span>
                           <div style={{flex:1,display:"flex",justifyContent:"flex-end"}}><TeamCell name={m.p2} name2={m.p2b} isWinner={m.winner===m.p2} align="right" size={24} ratings={{}}/></div>
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1290,6 +2533,7 @@
     // ── App ────────────────────────────────────────────────────────────────────
     function App() {
       const [players, setPlayers] = useState([]);
+      const [tournaments, setTournaments] = useState([]);
       const [matches, setMatches] = useState([]);
       const [view, setView] = useState("leaderboard");
       const [showMatch, setShowMatch] = useState(false);
@@ -1307,6 +2551,8 @@
             apiFetch("/api/matches"),
           ]);
           setPlayers(p); setMatches(m); setOffline(false); _setAvatarCache(p);
+          // Загружаем турниры отдельно — чтобы ошибка не блокировала весь интерфейс
+          apiFetch("/api/tournaments").then(t => setTournaments(t)).catch(() => {});
         } catch {
           setOffline(true);
         } finally {
@@ -1358,7 +2604,8 @@
         { id: "leaderboard", label: "Рейтинг", icon: "🏆" },
         { id: "history", label: "История", icon: "📋" },
         { id: "players", label: "Игроки", icon: "👤" },
-        { id: "compare", label: "Дуэль", icon: "⚔️" },
+        { id: "compare", label: "Сравнение", icon: "⚔️" },
+        { id: "tournament", label: "Турнир", icon: "🥊" },
       ];
 
       return (
@@ -1413,6 +2660,16 @@
                 }}>
                 Новый матч +
               </button>
+              <button className="mob" onClick={() => setShowMatch(true)}
+                style={{
+                  width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+                  background: "#E8822A", color: "#fff", border: "none",
+                  fontWeight: 700, fontSize: 22, cursor: "pointer",
+                  display: "none", alignItems: "center", justifyContent: "center", lineHeight: 1,
+                  paddingBottom: 2
+                }}>
+                +
+              </button>
             </div>
           </header>
 
@@ -1424,6 +2681,7 @@
                 {view === "history" && <History matches={matches} players={players} onDelete={deleteMatch} />}
                 {view === "players" && <PlayersPage players={players} onAdd={addPlayer} onDelete={deletePlayer} onOpenAdd={() => setShowPlayer(true)} onAvatarUpdate={loadAll} />}
                 {view === "compare" && <ComparePage players={players} matches={matches} />}
+                {view === "tournament" && <TournamentPage tournaments={tournaments} players={players} onReload={loadAll} />}
               </>
             )}
           </main>
@@ -1434,32 +2692,14 @@
             background: "#fff", borderTop: "1px solid #E8EAEC",
             zIndex: 90, paddingBottom: "env(safe-area-inset-bottom)"
           }}>
-            {NAV.slice(0, 2).map(n => (
+            {NAV.map(n => (
               <button key={n.id} onClick={() => setView(n.id)}
                 style={{
                   flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
                   justifyContent: "center", padding: "8px 0", background: "none", border: "none",
-                  color: view === n.id ? "#E8822A" : "#8C9BAB", cursor: "pointer", fontSize: 11, gap: 2
+                  color: view === n.id ? "#E8822A" : "#8C9BAB", cursor: "pointer", fontSize: 10, gap: 2
                 }}>
-                <span style={{ fontSize: 20 }}>{n.icon}</span>
-                {n.label}
-              </button>
-            ))}
-            <button onClick={() => setShowMatch(true)}
-              style={{
-                flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                padding: "8px 0", background: "#E8822A", border: "none", color: "#fff", cursor: "pointer"
-              }}>
-              <span style={{ fontSize: 26, lineHeight: 1 }}>+</span>
-            </button>
-            {NAV.slice(2).map(n => (
-              <button key={n.id} onClick={() => setView(n.id)}
-                style={{
-                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-                  justifyContent: "center", padding: "8px 0", background: "none", border: "none",
-                  color: view === n.id ? "#E8822A" : "#8C9BAB", cursor: "pointer", fontSize: 11, gap: 2
-                }}>
-                <span style={{ fontSize: 20 }}>{n.icon}</span>
+                <span style={{ fontSize: 18 }}>{n.icon}</span>
                 {n.label}
               </button>
             ))}
